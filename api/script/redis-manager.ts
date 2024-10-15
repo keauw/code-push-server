@@ -223,11 +223,12 @@ export class RedisManager {
     if (!this.isEnabled) {
       return q(<DeploymentMetrics>null);
     }
-
+    console.log("getMetricsWithDeploymentKey");
     return this._setupMetricsClientPromise
       .then(() => this._promisifiedMetricsClient.hgetall(Utilities.getDeploymentKeyLabelsHash(deploymentKey)))
       .then((metrics) => {
         // Redis returns numerical values as strings, handle parsing here.
+        console.log("metrics: ",metrics);
         if (metrics) {
           Object.keys(metrics).forEach((metricField) => {
             if (!isNaN(metrics[metricField])) {

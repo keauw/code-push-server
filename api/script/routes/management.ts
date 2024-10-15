@@ -843,6 +843,7 @@ export function getManagementRouter(config: ManagementConfig): Router {
         })
         .then((blobId: string) => storage.getBlobUrl(blobId))
         .then((blobUrl: string) => {
+          console.log("storage.getBlobUrl : ",blobUrl);
           restPackage.blobUrl = blobUrl;
           restPackage.size = stats.size;
 
@@ -858,6 +859,7 @@ export function getManagementRouter(config: ManagementConfig): Router {
         })
         .then((blobId?: string) => {
           if (blobId) {
+            console.log("storage.getBlobUrl blobId : ",blobId);
             return storage.getBlobUrl(blobId);
           }
 
@@ -871,6 +873,7 @@ export function getManagementRouter(config: ManagementConfig): Router {
 
           storagePackage.releaseMethod = storageTypes.ReleaseMethod.Upload;
           storagePackage.uploadTime = new Date().getTime();
+          console.log("storage.commitPackage");
           return storage.commitPackage(accountId, appId, deploymentToReleaseTo.id, storagePackage);
         })
         .then((committedPackage: storageTypes.Package): Promise<void> => {
@@ -880,10 +883,12 @@ export function getManagementRouter(config: ManagementConfig): Router {
           res.setHeader("Location", urlEncode([`/apps/${appName}/deployments/${deploymentName}`]));
           res.status(201).send({ package: restPackage }); // Send response without blocking on cleanup
 
+          console.log("deploymentToReleaseTo.key: ",deploymentToReleaseTo.key);
           return invalidateCachedPackage(deploymentToReleaseTo.key);
         })
         .then(() => processDiff(accountId, appId, deploymentToReleaseTo.id, storagePackage))
         .finally((): void => {
+          console.log("finally");
           // Cleanup; any errors before this point will still pass to the catch() block
           fs.unlink(filePath, (err: NodeJS.ErrnoException): void => {
             if (err) {
@@ -957,8 +962,10 @@ export function getManagementRouter(config: ManagementConfig): Router {
 
   router.get("/apps/:appName/deployments/:deploymentName/metrics", (req: Request, res: Response, next: (err?: any) => void): any => {
     if (!redisManager.isEnabled) {
+      console.log("redisManager is not Enable");
       res.send({ metrics: {} });
     } else {
+      console.log("redisManager is Enabled");
       const accountId: string = req.user.id;
       const appName: string = req.params.appName;
       const deploymentName: string = req.params.deploymentName;
@@ -972,10 +979,13 @@ export function getManagementRouter(config: ManagementConfig): Router {
           return nameResolver.resolveDeployment(accountId, appId, deploymentName);
         })
         .then((deployment: storageTypes.Deployment): Promise<redis.DeploymentMetrics> => {
+          console.log("redisManager.getMetricsWithDeploymentKey");
           return redisManager.getMetricsWithDeploymentKey(deployment.key);
         })
         .then((metrics: redis.DeploymentMetrics) => {
+          console.log("metrics: ",metrics);
           const deploymentMetrics: restTypes.DeploymentMetrics = converterUtils.toRestDeploymentMetrics(metrics);
+          console.log("deploymentMetrics: ",deploymentMetrics);
           res.send({ metrics: deploymentMetrics });
         })
         .catch((error: error.CodePushError) => errorUtils.restErrorHandler(res, error, next))

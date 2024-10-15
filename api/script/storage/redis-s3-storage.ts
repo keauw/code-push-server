@@ -6,7 +6,6 @@ import * as fs from "fs";
 import * as http from "http";
 import * as q from "q";
 import * as stream from "stream";
-
 import * as storage from "./storage";
 
 import clone = storage.clone;
@@ -15,6 +14,7 @@ import { isPrototypePollutionKey } from "./storage";
 import path = require("path");
 import Redis from "ioredis";
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
 
 function merge(original: any, updates: any): void {
   for (const property in updates) {
@@ -53,14 +53,34 @@ export class RedisS3Storage implements storage.Storage {
   private updatesDir: string = path.join(__dirname, "updates");
 
   constructor() {
-    this.redisClient = new Redis();
-    this.s3Client = new S3Client({
-      region: process.env.AWS_REGION,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS,
-      },
-    });
+    this.redisClient = new Redis({
+        port: Number.parseInt(process.env.REDIS_PORT), 
+        host: process.env.REDIS_HOST, 
+        username: "default", // needs Redis >= 6
+        password: process.env.REDIS_KEY,
+        db: 0,
+      });
+    
+    if( process.env.AWS_LOCAL_STACK_ENABLED === 'true' ){
+      this.s3Client = new S3Client({
+        region: process.env.AWS_REGION,
+        forcePathStyle: true,
+        endpoint: 'http://s3.localhost.localstack.cloud:4566',
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS,
+        },
+      });
+    }else{
+      this.s3Client = new S3Client({
+        region: process.env.AWS_REGION,
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS,
+        },
+      });
+    }
+
     if (!fs.existsSync(this.updatesDir)) {
       fs.mkdirSync(this.updatesDir);
     }
@@ -476,6 +496,7 @@ export class RedisS3Storage implements storage.Storage {
       return RedisS3Storage.getRejectedPromise(storage.ErrorCode.NotFound);
     }
 
+    console.log("commitPackage deploymentId : ",deploymentId);
     const deployment: any = <any>this.deployments[deploymentId];
     deployment.package = appPackage;
     const history: storage.Package[] = deployment.packageHistory;
@@ -488,7 +509,7 @@ export class RedisS3Storage implements storage.Storage {
 
     deployment.packageHistory.push(appPackage);
     appPackage.label = "v" + deployment.packageHistory.length;
-
+    console.log("commitPackage appPackage.label : ",appPackage.label);
     this.saveStateAsync();
     return q(clone(appPackage));
   }
@@ -539,17 +560,38 @@ export class RedisS3Storage implements storage.Storage {
       Body: stream,
     };
 
+    let upload = new Upload({
+      client: this.s3Client,
+      params: params,
+    });
+
+    upload.on("httpUploadProgress", (progress: ProgressEvent) => {
+      console.log(progress);
+    });
+
     return q
       .Promise<string>((resolve, reject) => {
-        this.s3Client
-          .send(new PutObjectCommand(params))
+        // this.s3Client
+        //   .send(new PutObjectCommand(params))
+        //   .then(() => {
+        //     resolve(blobId);
+        //   })
+        //   .catch(reject);
+
+        upload.done()
           .then(() => {
+            console.log("done uploading");
             resolve(blobId);
           })
           .catch(reject);
+
       })
       .then(() => {
-        this.blobs[blobId] = `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/${blobId}`;
+        if( process.env.AWS_LOCAL_STACK_ENABLED === 'true'  ){
+          this.blobs[blobId] = `http://${process.env.AWS_BUCKET_NAME}.s3.localhost.localstack.cloud:4566/${blobId}`;
+        }else{
+          this.blobs[blobId] = `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/${blobId}`;
+        }     
 
         this.saveStateAsync();
 
@@ -757,30 +799,6 @@ export class RedisS3Storage implements storage.Storage {
     if (accountApps.indexOf(appId) === -1) {
       accountApps.push(appId);
     }
-  }
-
-  private getBlobServer(): Promise<http.Server> {
-    if (!this._blobServerPromise) {
-      const app: express.Express = express();
-
-      app.get("/:blobId", (req: express.Request, res: express.Response, next: (err?: Error) => void): any => {
-        const blobId: string = req.params.blobId;
-        if (this.blobs[blobId]) {
-          res.send(this.blobs[blobId]);
-        } else {
-          res.sendStatus(404);
-        }
-      });
-
-      const deferred: q.Deferred<http.Server> = q.defer<http.Server>();
-      const server: http.Server = app.listen(0, () => {
-        deferred.resolve(server);
-      });
-
-      this._blobServerPromise = deferred.promise;
-    }
-
-    return this._blobServerPromise;
   }
 
   private newId(): string {
