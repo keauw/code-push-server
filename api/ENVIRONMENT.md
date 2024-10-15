@@ -9,6 +9,7 @@ Currently, the following environment variables are available. For convenience, w
 ### Storage
 
 #### Local
+- `AWS_LOCAL_STACK_ENABLED`: set to true if you test on local with localstack
 
 #### S3
 
