@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import * as express from "express";
 import * as fs from "fs";
 import * as http from "http";
 import * as q from "q";

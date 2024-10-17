@@ -12,7 +12,6 @@ const domain = require("express-domain-middleware");
 import * as express from "express";
 import * as q from "q";
 import { RedisS3Storage } from "./storage/redis-s3-storage";
-import { JsonStorage } from "./storage/json-storage";
 
 interface Secret {
   id: string;
