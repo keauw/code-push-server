@@ -8,7 +8,7 @@ SERVER_URL=http://localhost:3000
 GITHUB_CLIENT_ID=<github-oauth-app-client-id>
 GITHUB_CLIENT_SECRET=<github-oauth-app-client-secret>
 
-REDIS_HOST=localhost
+REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 REDIS_KEY=Password1234!
 
