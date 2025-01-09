@@ -88,7 +88,7 @@ class PromisifiedRedisClient {
 
 export class RedisManager {
   private static DEFAULT_EXPIRY: number = 3600; // one hour, specified in seconds
-  private static METRICS_DB: number = 1;
+  private static METRICS_DB: number = 15;
 
   private _opsClient: redis.RedisClient;
   private _promisifiedOpsClient: PromisifiedRedisClient;
@@ -102,6 +102,7 @@ export class RedisManager {
         host: process.env.REDIS_HOST,
         port: process.env.REDIS_PORT,
         auth_pass: process.env.REDIS_KEY,
+        database: RedisManager.METRICS_DB,
       };
       this._opsClient = redis.createClient(redisConfig);
       this._metricsClient = redis.createClient(redisConfig);

@@ -1,0 +1,26 @@
+FROM node:18.20.5-alpine3.21
+
+LABEL maintainer="apinan.k"
+
+WORKDIR /app
+
+COPY . .
+
+ENV AWS_LOCAL_STACK_ENABLED=true
+ENV AWS_BUCKET_NAME=code-push
+ENV AWS_ACCESS_KEY_ID=noneed
+ENV AWS_SECRET_ACCESS=noneed
+ENV AWS_REGION=us-east-1
+ENV SERVER_URL=http://localhost:3000
+ENV GITHUB_CLIENT_ID=Ov23lizjpGcj4ehBxE7S
+ENV GITHUB_CLIENT_SECRET=52f1360a81da2b2290f42647bd9856ed9f4a9d3a
+ENV REDIS_HOST=host.docker.internal
+ENV REDIS_PORT=6379
+ENV REDIS_KEY=Password1234!
+ENV LOGGING=true
+ENV LOG_INVALID_JSON_REQUESTS=true
+
+EXPOSE 3000
+
+# CMD ["node", "./bin/script/server.js"]
+CMD ["npm","run","start"]

@@ -57,7 +57,7 @@ export class RedisS3Storage implements storage.Storage {
         host: process.env.REDIS_HOST, 
         username: "default", // needs Redis >= 6
         password: process.env.REDIS_KEY,
-        db: 0,
+        db: 15,
       });
     
     if( process.env.AWS_LOCAL_STACK_ENABLED === 'true' ){
@@ -570,13 +570,6 @@ export class RedisS3Storage implements storage.Storage {
 
     return q
       .Promise<string>((resolve, reject) => {
-        // this.s3Client
-        //   .send(new PutObjectCommand(params))
-        //   .then(() => {
-        //     resolve(blobId);
-        //   })
-        //   .catch(reject);
-
         upload.done()
           .then(() => {
             console.log("done uploading");

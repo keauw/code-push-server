@@ -150,6 +150,7 @@ export class PassportAuthentication {
     const isGitHubAuthenticationEnabled: boolean = !!this._serverUrl && !!gitHubClientId && !!gitHubClientSecret;
 
     if (isGitHubAuthenticationEnabled) {
+      console.log('using Github authentication');
       this.setupGitHubRoutes(router, gitHubClientId, gitHubClientSecret);
     }
 
