@@ -57,7 +57,7 @@ export class RedisS3Storage implements storage.Storage {
         host: process.env.REDIS_HOST, 
         username: "default", // needs Redis >= 6
         password: process.env.REDIS_KEY,
-        db: 15,
+        db: Number.parseInt(process.env.REDIS_DB_INDEX),
       });
     
     if( process.env.AWS_LOCAL_STACK_ENABLED === 'true' ){

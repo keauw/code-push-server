@@ -88,7 +88,7 @@ class PromisifiedRedisClient {
 
 export class RedisManager {
   private static DEFAULT_EXPIRY: number = 3600; // one hour, specified in seconds
-  private static METRICS_DB: number = 15;
+  private static METRICS_DB: number = Number.parseInt(process.env.REDIS_DB_INDEX);
 
   private _opsClient: redis.RedisClient;
   private _promisifiedOpsClient: PromisifiedRedisClient;
